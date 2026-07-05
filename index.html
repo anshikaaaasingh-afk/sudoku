@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sudoku Master</title>
+<link rel="manifest" href="pwa/manifest.json">
+<meta name="theme-color" content="#2F6FED">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%232F6FED%22/><text x=%2250%22 y=%2270%22 font-size=%2258%22 text-anchor=%22middle%22 font-family=%22Georgia%22 fill=%22white%22>9</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="dark">
+
+<div class="grid-bg" aria-hidden="true"></div>
+
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">🧩 Sudoku<span>Master</span></div>
+    <nav class="topnav">
+      <button class="nav-btn active" data-nav="play">Play</button>
+      <button class="nav-btn" data-nav="learn">Learn</button>
+      <button class="nav-btn" data-nav="daily">Daily</button>
+      <button class="nav-btn" data-nav="stats">Stats</button>
+      <button class="nav-btn" data-nav="achievements">Badges</button>
+      <button class="nav-btn" data-nav="settings">⚙️</button>
+    </nav>
+    <div class="level-chip" id="levelChip">Lv.1 Beginner</div>
+  </header>
+
+  <main class="screens">
+
+    <!-- PLAY / SETUP -->
+    <section class="screen active" id="screen-play">
+      <div class="panel hero">
+        <h1>Sharpen your solve.</h1>
+        <p>Pick a difficulty, choose your board, and go.</p>
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">Difficulty</h2>
+        <div class="pill-row" id="difficultyPicker">
+          <button class="pill selected" data-diff="easy">Easy</button>
+          <button class="pill" data-diff="medium">Medium</button>
+          <button class="pill" data-diff="hard">Hard</button>
+          <button class="pill" data-diff="expert">Expert</button>
+        </div>
+      </div>
+      <button class="btn-primary btn-big" id="newGameBtn">▶ New Game</button>
+      <button class="btn-outline btn-big" id="resumeBtn" style="display:none;">↺ Resume in-progress puzzle</button>
+    </section>
+
+    <!-- GAME -->
+    <section class="screen" id="screen-game">
+      <div class="hud panel">
+        <div class="hud-item"><span class="hud-label">Time</span><span class="hud-value mono" id="hudTime">00:00</span></div>
+        <div class="hud-item"><span class="hud-label">Mistakes</span><span class="hud-value mono" id="hudMistakes">0</span></div>
+        <div class="hud-item"><span class="hud-label">Hints</span><span class="hud-value mono" id="hudHints">0</span></div>
+        <div class="hud-item"><span class="hud-label">Difficulty</span><span class="hud-value" id="hudDifficulty">—</span></div>
+        <div class="hud-spacer"></div>
+        <button class="btn-outline btn-sm" id="pauseBtn">⏸ Pause</button>
+        <button class="btn-outline btn-sm" id="resetPuzzleBtn">↺ Reset</button>
+        <button class="btn-outline btn-sm" id="quitBtn">✕ Quit</button>
+      </div>
+
+      <div class="game-layout">
+        <div class="board-col">
+          <div class="board" id="board"></div>
+          <div class="numpad" id="numpad">
+            <button class="num-btn" data-num="1">1</button>
+            <button class="num-btn" data-num="2">2</button>
+            <button class="num-btn" data-num="3">3</button>
+            <button class="num-btn" data-num="4">4</button>
+            <button class="num-btn" data-num="5">5</button>
+            <button class="num-btn" data-num="6">6</button>
+            <button class="num-btn" data-num="7">7</button>
+            <button class="num-btn" data-num="8">8</button>
+            <button class="num-btn" data-num="9">9</button>
+            <button class="num-btn erase" data-num="0">⌫</button>
+          </div>
+          <div class="toggle-row">
+            <button class="btn-outline btn-sm" id="notesToggle">✏️ Notes: Off</button>
+            <button class="btn-outline btn-sm" id="autoCheckToggle">✅ Auto-check: On</button>
+            <button class="btn-outline btn-sm" id="checkPuzzleBtn">🔍 Check</button>
+          </div>
+        </div>
+
+        <div class="side-col">
+          <div class="panel">
+            <h2 class="panel-title">💡 Hints</h2>
+            <button class="btn-outline btn-full btn-sm" id="basicHintBtn">Reveal a number</button>
+            <button class="btn-outline btn-full btn-sm" id="smartHintBtn">Explain next move</button>
+            <div id="hintExplanation" class="hint-box" style="display:none;"></div>
+          </div>
+          <div class="panel">
+            <h2 class="panel-title">🧠 Solver</h2>
+            <button class="btn-outline btn-full btn-sm" id="instantSolveBtn">Instant solve</button>
+            <button class="btn-outline btn-full btn-sm" id="stepSolveBtn">Animate solving</button>
+            <div id="solverControls" style="display:none; margin-top:10px;">
+              <label class="mini-label">Speed</label>
+              <input type="range" id="solveSpeed" min="1" max="10" value="6" style="width:100%;">
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <button class="btn-outline btn-sm" id="solvePauseBtn">⏸ Pause</button>
+                <button class="btn-outline btn-sm" id="solveStopBtn">⏹ Stop</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEARN -->
+    <section class="screen" id="screen-learn">
+      <div class="panel hero"><h1>📚 Learn to solve</h1><p>Five techniques, from "just look for the one obvious cell" to genuine deduction.</p></div>
+      <div class="lesson-grid" id="lessonGrid"></div>
+    </section>
+
+    <!-- DAILY -->
+    <section class="screen" id="screen-daily">
+      <div class="panel hero"><h1>📅 Daily Challenge</h1><p id="dailyDesc">One puzzle a day, same board for everyone who plays today.</p></div>
+      <div class="panel" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+        <div><div class="stat-mini" id="dailyStreakNum">0</div><div class="stat-mini-sub">day streak</div></div>
+        <button class="btn-primary" id="startDailyBtn">▶ Play today's puzzle</button>
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">Recent history</h2>
+        <div id="dailyHistory"></div>
+      </div>
+    </section>
+
+    <!-- STATS / ANALYTICS -->
+    <section class="screen" id="screen-stats">
+      <div class="panel hero"><h1>📊 Statistics</h1><p id="insightLine">—</p></div>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="grid-2">
+        <div class="panel"><h2 class="panel-title">Games per week</h2><canvas id="chartWeekly" height="160"></canvas></div>
+        <div class="panel"><h2 class="panel-title">Solve times (recent wins)</h2><canvas id="chartTimes" height="160"></canvas></div>
+      </div>
+      <div class="grid-2">
+        <div class="panel"><h2 class="panel-title">Difficulty distribution</h2><canvas id="chartDifficulty" height="160"></canvas></div>
+        <div class="panel"><h2 class="panel-title">Win rate trend</h2><canvas id="chartWinRate" height="160"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">Hint usage trend</h2><canvas id="chartHints" height="140"></canvas>
+      </div>
+      <div class="panel" id="recommendationPanel" style="display:none;"></div>
+      <button class="btn-outline" id="exportPdfBtn">📄 Export analytics report as PDF</button>
+    </section>
+
+    <!-- ACHIEVEMENTS -->
+    <section class="screen" id="screen-achievements">
+      <div class="panel hero"><h1>🏆 Achievements</h1><p>Unlocked automatically as you play.</p></div>
+      <div id="achievementTiers"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="screen" id="screen-settings">
+      <div class="panel hero"><h1>⚙️ Settings</h1></div>
+      <div class="panel">
+        <h2 class="panel-title">Theme</h2>
+        <div class="pill-row" id="themePicker"></div>
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">Sound</h2>
+        <label class="switch-row"><input type="checkbox" id="soundToggle"> Sound effects</label>
+        <label class="switch-row"><input type="checkbox" id="musicToggle"> Ambient music</label>
+        <label class="mini-label">Volume</label>
+        <input type="range" id="volumeSlider" min="0" max="100" value="60">
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">Reminders</h2>
+        <button class="btn-outline" id="notifyBtn">🔔 Enable play reminders</button>
+      </div>
+      <div class="panel">
+        <h2 class="panel-title">Data</h2>
+        <button class="btn-outline btn-full" id="exportHistoryBtn">📄 Export game history as PDF</button>
+        <button class="btn-danger btn-full" id="resetDataBtn" style="margin-top:8px;">🗑️ Reset all progress</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal-overlay" id="resultsModal">
+  <div class="modal">
+    <h2 id="resultsTitle">🎉 Solved!</h2>
+    <p id="resultsSub" class="mini-label" style="text-transform:none;"></p>
+    <div class="grid-3">
+      <div class="result-stat"><span>Time</span><b id="rTime" class="mono">00:00</b></div>
+      <div class="result-stat"><span>Mistakes</span><b id="rMistakes" class="mono">0</b></div>
+      <div class="result-stat"><span>Hints</span><b id="rHints" class="mono">0</b></div>
+    </div>
+    <div class="hint-box" id="rXpLine" style="margin-top:14px;"></div>
+    <div id="rNewBadges"></div>
+    <div class="results-actions">
+      <button class="btn-primary" id="resultsPlayAgainBtn">↺ Play again</button>
+      <button class="btn-outline" id="resultsMenuBtn">Back to menu</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

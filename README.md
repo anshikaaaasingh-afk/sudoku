@@ -96,3 +96,9 @@ python -m http.server 8000
 - Swap `localStorage` for a backend to unlock real leaderboards and cloud save
 - Add a Web Worker around the generator so Expert-difficulty generation never blocks the main thread, even on slow devices
 # sudoku
+# sudoku
+# sudoku
+# sudoku
+# sudoku
+# sudoku
+# sudoku
